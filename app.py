@@ -157,11 +157,12 @@ if place1 and place2 and place1 != place2:
 
         # route
         fig.add_trace(go.Scattergeo(
-            lat=gc_lats,
-            lon=gc_lons,
-            mode='lines',
-            line=dict(width=2, color='yellow'),
-        ))
+    lat=gc_lats,
+    lon=gc_lons,
+    mode='lines',
+    line=dict(width=3, color='yellow'),
+    connectgaps=True
+))
 
         # endpoints
         fig.add_trace(go.Scattergeo(
