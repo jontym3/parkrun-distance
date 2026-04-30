@@ -183,28 +183,6 @@ if place1 and place2 and place1 != place2:
         ))
 
         # animation frames
-        frames = []
-        steps = len(gc_lats)
-
-        for i in range(steps):
-            frames.append(go.Frame(
-                data=[go.Scattergeo(
-                    lat=[gc_lats[i]],
-                    lon=[gc_lons[i]],
-                    mode='markers',
-                    marker=dict(size=10, color='white', symbol='triangle-up')
-                )],
-                layout=dict(
-                    geo=dict(
-                        projection_rotation=dict(
-                            lon=mid_lon * (i / steps),
-                            lat=mid_lat
-                        )
-                    )
-                )
-            ))
-
-        fig.frames = frames
 
         fig.update_layout(
             geo=dict(
@@ -216,18 +194,6 @@ if place1 and place2 and place1 != place2:
                 oceancolor="lightblue",
             ),
             margin=dict(l=0, r=0, t=0, b=0),
-            updatemenus=[dict(
-                type="buttons",
-                showactive=False,
-                buttons=[dict(
-                    label="✈️ Fly",
-                    method="animate",
-                    args=[None, dict(
-                        frame=dict(duration=50, redraw=True),
-                        fromcurrent=True
-                    )]
-                )]
-            )]
         )
 
         st.plotly_chart(fig, use_container_width=True)
