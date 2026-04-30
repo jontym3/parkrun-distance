@@ -104,6 +104,15 @@ st.title("Parkrun Distance Calculator")
 place1 = st.selectbox("From", [""] + places, index=0, placeholder="Start typing...")
 place2 = st.selectbox("To", [""] + places, index=0, placeholder="Start typing...")
 
+# --- DISTANCE ---
+if place1 and place2 and place1 != place2:
+    result = get_distance(place1, place2)
+
+    if result is not None:
+        st.success(f"{place1} → {place2}: {result:,.1f} km")
+    else:
+        st.error("Could not calculate distance")
+
 # --- MAP ---
 import plotly.graph_objects as go
 import numpy as np
