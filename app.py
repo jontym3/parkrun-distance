@@ -149,75 +149,29 @@ if place1 and place2:
  # --- MAP ---
 import streamlit.components.v1 as components
 
-coords = get_coordinates(place1, place2)
+html = """
+<html>
+<head>
+    <script src="https://cesium.com/downloads/cesiumjs/releases/1.111/Build/Cesium/Cesium.js"></script>
+    <link href="https://cesium.com/downloads/cesiumjs/releases/1.111/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
+    <style>
+        html, body, #cesiumContainer {
+            width: 100%; height: 500px; margin: 0; padding: 0;
+        }
+    </style>
+</head>
+<body>
+<div id="cesiumContainer"></div>
+<script>
+    Cesium.Ion.defaultAccessToken = 'YOUR_TOKEN_HERE';
 
-if coords:
-    df = pd.DataFrame(coords, columns=["name", "lat", "lon"])
+    const viewer = new Cesium.Viewer('cesiumContainer');
+</script>
+</body>
+</html>
+"""
 
-    lat1, lon1 = df.iloc[0]["lat"], df.iloc[0]["lon"]
-    lat2, lon2 = df.iloc[1]["lat"], df.iloc[1]["lon"]
-
-    html = """
-    <html>
-    <head>
-        <script src="https://cesium.com/downloads/cesiumjs/releases/1.111/Build/Cesium/Cesium.js"></script>
-        <link href="https://cesium.com/downloads/cesiumjs/releases/1.111/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
-        <style>
-            html, body, #cesiumContainer {{
-                width: 100%; height: 500px; margin: 0; padding: 0;
-            }}
-        </style>
-    </head>
-    <body>
-        <div id="cesiumContainer"></div>
-        <script>
-            Cesium.Ion.defaultAccessToken = '{token}';
-
-            const viewer = new Cesium.Viewer('cesiumContainer', {{
-                terrainProvider: Cesium.createWorldTerrain()
-            }});
-
-            const p1 = Cesium.Cartesian3.fromDegrees({lon1}, {lat1});
-            const p2 = Cesium.Cartesian3.fromDegrees({lon2}, {lat2});
-
-            // Points
-            viewer.entities.add({{
-                position: p1,
-                point: {{ pixelSize: 10, color: Cesium.Color.RED }}
-            }});
-
-            viewer.entities.add({{
-                position: p2,
-                point: {{ pixelSize: 10, color: Cesium.Color.BLUE }}
-            }});
-
-            // ✈️ Curved great-circle path
-            viewer.entities.add({{
-                polyline: {{
-                    positions: [p1, p2],
-                    width: 4,
-                    material: new Cesium.PolylineGlowMaterialProperty({{
-                        glowPower: 0.2,
-                        color: Cesium.Color.YELLOW
-                    }}),
-                    arcType: Cesium.ArcType.GEODESIC
-                }}
-            }});
-
-            viewer.zoomTo(viewer.entities);
-        </script>
-    </body>
-    </html>
-    """.format(
-        lat1=lat1,
-        lon1=lon1,
-        lat2=lat2,
-        lon2=lon2,
-        token="PASTE_YOUR_TOKEN_HERE"
-    )
-
-    components.html(html, height=500)
-
+components.html(html, height=500)
 # --- TOP LISTS ---
 st.markdown("---")
 st.header("Distance Rankings")
