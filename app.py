@@ -147,6 +147,8 @@ if place1 and place2:
         st.success(f"{place1} → {place2}: {result:,.1f} km")
 
  # --- MAP ---
+import streamlit.components.v1 as components
+
 coords = get_coordinates(place1, place2)
 
 if coords:
@@ -155,7 +157,7 @@ if coords:
     lat1, lon1 = df.iloc[0]["lat"], df.iloc[0]["lon"]
     lat2, lon2 = df.iloc[1]["lat"], df.iloc[1]["lon"]
 
-    html = f"""
+    html = """
     <html>
     <head>
         <script src="https://cesium.com/downloads/cesiumjs/releases/1.111/Build/Cesium/Cesium.js"></script>
@@ -169,38 +171,52 @@ if coords:
     <body>
         <div id="cesiumContainer"></div>
         <script>
-            Cesium.Ion.defaultAccessToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiI3ZjdmNDlhZC1jMjQxLTRiNmMtOTRjMy1iOGU2MmE3NDhjY2UiLCJpZCI6NDI1NjAwLCJpYXQiOjE3Nzc1MjI1MTh9.zRNbOUNTDY5cAl2308K0d1CWyagQ-va8ZUcFY2DYkss';
+            Cesium.Ion.defaultAccessToken = '{token}';
 
-const viewer = new Cesium.Viewer('cesiumContainer', {
-    terrainProvider: Cesium.createWorldTerrain()
-});
+            const viewer = new Cesium.Viewer('cesiumContainer', {{
+                terrainProvider: Cesium.createWorldTerrain()
+            }});
 
-const p1 = Cesium.Cartesian3.fromDegrees({lon1}, {lat1});
-const p2 = Cesium.Cartesian3.fromDegrees({lon2}, {lat2});
+            const p1 = Cesium.Cartesian3.fromDegrees({lon1}, {lat1});
+            const p2 = Cesium.Cartesian3.fromDegrees({lon2}, {lat2});
 
-// Points
-viewer.entities.add({
-    position: p1,
-    point: { pixelSize: 10, color: Cesium.Color.RED }
-});
+            // Points
+            viewer.entities.add({{
+                position: p1,
+                point: {{ pixelSize: 10, color: Cesium.Color.RED }}
+            }});
 
-viewer.entities.add({
-    position: p2,
-    point: { pixelSize: 10, color: Cesium.Color.BLUE }
-});
+            viewer.entities.add({{
+                position: p2,
+                point: {{ pixelSize: 10, color: Cesium.Color.BLUE }}
+            }});
 
-// ✈️ Curved great-circle path
-viewer.entities.add({
-    polyline: {
-        positions: [p1, p2],
-        width: 4,
-        material: Cesium.Color.YELLOW,
-        arcType: Cesium.ArcType.GEODESIC
-    }
-});
+            // ✈️ Curved great-circle path
+            viewer.entities.add({{
+                polyline: {{
+                    positions: [p1, p2],
+                    width: 4,
+                    material: new Cesium.PolylineGlowMaterialProperty({{
+                        glowPower: 0.2,
+                        color: Cesium.Color.YELLOW
+                    }}),
+                    arcType: Cesium.ArcType.GEODESIC
+                }}
+            }});
 
-// Zoom to fit
-viewer.zoomTo(viewer.entities);
+            viewer.zoomTo(viewer.entities);
+        </script>
+    </body>
+    </html>
+    """.format(
+        lat1=lat1,
+        lon1=lon1,
+        lat2=lat2,
+        lon2=lon2,
+        token="PASTE_YOUR_TOKEN_HERE"
+    )
+
+    components.html(html, height=500)
 
 # --- TOP LISTS ---
 st.markdown("---")
