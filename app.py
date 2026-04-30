@@ -165,27 +165,33 @@ html = """
 <script>
     Cesium.Ion.defaultAccessToken = 'YOUR_TOKEN_HERE';
 
-    const viewer = new Cesium.Viewer('cesiumContainer');
+    const viewer = new Cesium.Viewer('cesiumContainer', {
+    terrainProvider: Cesium.createWorldTerrain(),
+    imageryProvider: new Cesium.IonImageryProvider({ assetId: 2 })
+});
 </script>
 </body>
 </html>
 """
 
 components.html(html, height=500)
-# --- TOP LISTS ---
+
+# --- TOP LISTS (always visible) ---
 st.markdown("---")
 st.header("Distance Rankings")
 
 tab1, tab2 = st.tabs(["Closest 100", "Furthest 100"])
 
 with tab1:
-    df = pd.DataFrame(get_closest(), columns=["From", "To", "Distance"])
-    df["Distance"] = df["Distance"].map(lambda x: f"{x:,.1f}")
-    df.index = df.index + 1
-    st.dataframe(df, use_container_width=True)
+    with st.spinner("Loading closest distances..."):
+        df = pd.DataFrame(get_closest(), columns=["From", "To", "Distance"])
+        df["Distance"] = df["Distance"].map(lambda x: f"{x:,.1f}")
+        df.insert(0, "Rank", range(1, len(df) + 1))
+        st.dataframe(df, use_container_width=True)
 
 with tab2:
-    df = pd.DataFrame(get_furthest(), columns=["From", "To", "Distance"])
-    df["Distance"] = df["Distance"].map(lambda x: f"{x:,.1f}")
-    df.index = df.index + 1
-    st.dataframe(df, use_container_width=True)
+    with st.spinner("Loading furthest distances..."):
+        df = pd.DataFrame(get_furthest(), columns=["From", "To", "Distance"])
+        df["Distance"] = df["Distance"].map(lambda x: f"{x:,.1f}")
+        df.insert(0, "Rank", range(1, len(df) + 1))
+        st.dataframe(df, use_container_width=True)
