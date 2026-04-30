@@ -99,7 +99,7 @@ def get_furthest():
         return cur.fetchall()
 
 # --- UI ---
-st.title("Parkrun Distance Calculator")
+st.title("parkrun Distance Calculator")
 
 place1 = st.selectbox("From", [""] + places, index=0, placeholder="Start typing...")
 place2 = st.selectbox("To", [""] + places, index=0, placeholder="Start typing...")
