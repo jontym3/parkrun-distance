@@ -195,7 +195,7 @@ if place1 and place2 and place1 != place2:
             lon1=lon1,
             lat2=lat2,
             lon2=lon2,
-            token=st.secrets["CESIUM_TOKEN"]
+            token=st.secrets["eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiI3ZjdmNDlhZC1jMjQxLTRiNmMtOTRjMy1iOGU2MmE3NDhjY2UiLCJpZCI6NDI1NjAwLCJpYXQiOjE3Nzc1MjI1MTh9.zRNbOUNTDY5cAl2308K0d1CWyagQ-va8ZUcFY2DYkss"]
         )
 
         components.html(html, height=500)
