@@ -124,6 +124,9 @@ if place1 and place2 and place1 != place2:
         lat2 = np.radians(df.iloc[1]["lat"])
         lon2 = np.radians(df.iloc[1]["lon"])
 
+        mid_lat = (np.degrees(lat1) + np.degrees(lat2)) / 2
+        mid_lon = (np.degrees(lon1) + np.degrees(lon2)) / 2
+
         # --- great circle ---
         def great_circle(lat1, lon1, lat2, lon2, n=100):
             d = 2 * np.arcsin(np.sqrt(
@@ -168,15 +171,22 @@ if place1 and place2 and place1 != place2:
         ))
 
         fig.update_layout(
-            geo=dict(
-                projection_type="orthographic",
-                showland=True,
-                landcolor="lightgray",
-                showocean=True,
-                oceancolor="lightblue",
-            ),
-            margin=dict(l=0, r=0, t=0, b=0)
-        )
+    geo=dict(
+        projection_type="orthographic",
+
+        # 🎯 THIS is the key line
+        projection_rotation=dict(
+            lat=mid_lat,
+            lon=mid_lon
+        ),
+
+        showland=True,
+        landcolor="lightgray",
+        showocean=True,
+        oceancolor="lightblue",
+    ),
+    margin=dict(l=0, r=0, t=0, b=0)
+)
 
         st.plotly_chart(fig, use_container_width=True)
 
