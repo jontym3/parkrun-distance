@@ -116,8 +116,23 @@ def get_furthest():
 # --- UI ---
 st.title("Parkrun Distance Calculator")
 
-place1 = st.selectbox("From", places)
-place2 = st.selectbox("To", places)
+place1 = st.selectbox(
+    "From",
+    [""] + places,
+    index=0,
+    placeholder="Start typing a place..."
+)
+
+place2 = st.selectbox(
+    "To",
+    [""] + places,
+    index=0,
+    placeholder="Start typing a place..."
+)
+
+if not place1 or not place2:
+    st.info("Please select both places")
+    st.stop()
 
 if place1 == place2:
     st.warning("Please select two different places")
@@ -131,8 +146,9 @@ if place1 and place2:
     if result is not None:
         st.success(f"{place1} → {place2}: {result:,.1f} km")
 
-    # --- MAP ---
- 
+ # --- MAP ---
+coords = get_coordinates(place1, place2)
+
 if coords:
     df = pd.DataFrame(coords, columns=["name", "lat", "lon"])
 
