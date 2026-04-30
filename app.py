@@ -226,4 +226,5 @@ with tab2:
     df.insert(0, "Rank", range(1, len(df) + 1))
     st.dataframe(df, use_container_width=True, hide_index=True)
 
-
+st.markdown("---")
+st.caption("Created by Jonathan Morgan")
