@@ -209,7 +209,7 @@ if place1 and place2 and place1 != place2:
 
 # --- TOP LISTS (always visible) ---
 st.markdown("---")
-st.header("Distance Rankings")
+st.header("Distance Rankings (km)")
 
 tab1, tab2 = st.tabs(["Furthest 100", "Closest 100"])
 
