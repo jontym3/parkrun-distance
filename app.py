@@ -81,7 +81,7 @@ if place1 and place2:
     if coords:
         df = pd.DataFrame(coords, columns=["name", "lat", "lon"])
 
-        # --- Different colours for each point
+        # --- Different colours
         if len(df) == 2:
             df["color"] = [[255, 0, 0], [0, 128, 255]]
         else:
@@ -97,7 +97,7 @@ if place1 and place2:
             pickable=True,
         )
 
-        # --- Line between points
+        # --- Line
         if len(df) == 2:
             line_data = pd.DataFrame([{
                 "from_lon": df.iloc[0]["lon"],
@@ -117,49 +117,39 @@ if place1 and place2:
         else:
             line_layer = None
 
-        # --- Center + dynamic zoom
+        # --- AUTO-FIT BOUNDS ---
         min_lat = df["lat"].min()
-max_lat = df["lat"].max()
-min_lon = df["lon"].min()
-max_lon = df["lon"].max()
+        max_lat = df["lat"].max()
+        min_lon = df["lon"].min()
+        max_lon = df["lon"].max()
 
-mid_lat = (min_lat + max_lat) / 2
-mid_lon = (min_lon + max_lon) / 2
+        mid_lat = (min_lat + max_lat) / 2
+        mid_lon = (min_lon + max_lon) / 2
 
-lat_diff = max_lat - min_lat
-lon_diff = max_lon - min_lon
+        lat_diff = max_lat - min_lat
+        lon_diff = max_lon - min_lon
 
-spread = max(lat_diff, lon_diff)
+        spread = max(lat_diff, lon_diff)
 
-# --- Convert spread to zoom level
-if spread > 100:
-    zoom = 1
-elif spread > 50:
-    zoom = 2
-elif spread > 20:
-    zoom = 3
-elif spread > 10:
-    zoom = 4
-elif spread > 5:
-    zoom = 5
-elif spread > 2:
-    zoom = 6
-elif spread > 1:
-    zoom = 7
-else:
-    zoom = 8
+        # Padding so points aren't on edge
+        spread *= 1.2
 
-view_state = pdk.ViewState(
-    latitude=mid_lat,
-    longitude=mid_lon,
-    zoom=zoom,
-)
-
-        if len(df) == 2:
-            lat_diff = abs(df.iloc[0]["lat"] - df.iloc[1]["lat"])
-            zoom = 3 if lat_diff > 20 else 5
-        else:
+        if spread > 100:
+            zoom = 1
+        elif spread > 50:
+            zoom = 2
+        elif spread > 20:
+            zoom = 3
+        elif spread > 10:
+            zoom = 4
+        elif spread > 5:
             zoom = 5
+        elif spread > 2:
+            zoom = 6
+        elif spread > 1:
+            zoom = 7
+        else:
+            zoom = 8
 
         view_state = pdk.ViewState(
             latitude=mid_lat,
