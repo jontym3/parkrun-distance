@@ -2,7 +2,7 @@ import streamlit as st
 import psycopg2
 import pandas as pd
 import pydeck as pdk
-
+import streamlit.components.v1 as components
 
 # --- DB CONNECTION ---
 @st.cache_resource
@@ -132,8 +132,7 @@ if place1 and place2:
         st.success(f"{place1} → {place2}: {result:,.1f} km")
 
     # --- MAP ---
-    import streamlit.components.v1 as components
-
+ 
 if coords:
     df = pd.DataFrame(coords, columns=["name", "lat", "lon"])
 
