@@ -113,41 +113,84 @@ coords = get_coordinates(place1, place2)
 if coords:
     df = pd.DataFrame(coords, columns=["name", "lat", "lon"])
 
-    lat1, lon1 = df.iloc[0]["lat"], df.iloc[0]["lon"]
-    lat2, lon2 = df.iloc[1]["lat"], df.iloc[1]["lon"]
+    lat1, lon1 = np.radians(df.iloc[0]["lat"]), np.radians(df.iloc[0]["lon"])
+    lat2, lon2 = np.radians(df.iloc[1]["lat"]), np.radians(df.iloc[1]["lon"])
 
-    # --- create great circle curve ---
-    lats = np.linspace(lat1, lat2, 100)
-    lons = np.linspace(lon1, lon2, 100)
+    # --- great circle interpolation ---
+    def great_circle(lat1, lon1, lat2, lon2, n=100):
+        d = 2 * np.arcsin(np.sqrt(
+            np.sin((lat2 - lat1)/2)**2 +
+            np.cos(lat1)*np.cos(lat2)*np.sin((lon2 - lon1)/2)**2
+        ))
 
+        f = np.linspace(0, 1, n)
+
+        A = np.sin((1 - f) * d) / np.sin(d)
+        B = np.sin(f * d) / np.sin(d)
+
+        x = A*np.cos(lat1)*np.cos(lon1) + B*np.cos(lat2)*np.cos(lon2)
+        y = A*np.cos(lat1)*np.sin(lon1) + B*np.cos(lat2)*np.sin(lon2)
+        z = A*np.sin(lat1) + B*np.sin(lat2)
+
+        lat = np.arctan2(z, np.sqrt(x**2 + y**2))
+        lon = np.arctan2(y, x)
+
+        return np.degrees(lat), np.degrees(lon)
+
+    gc_lats, gc_lons = great_circle(lat1, lon1, lat2, lon2)
+
+    # --- build figure ---
     fig = go.Figure()
 
     # Points
     fig.add_trace(go.Scattergeo(
-        lat=[lat1, lat2],
-        lon=[lon1, lon2],
+        lat=[np.degrees(lat1), np.degrees(lat2)],
+        lon=[np.degrees(lon1), np.degrees(lon2)],
         mode='markers',
         marker=dict(size=8, color=['red', 'blue']),
         text=df["name"],
     ))
 
-    # Curved path
+    # Great-circle path
     fig.add_trace(go.Scattergeo(
-        lat=lats,
-        lon=lons,
+        lat=gc_lats,
+        lon=gc_lons,
         mode='lines',
         line=dict(width=2, color='yellow'),
     ))
 
+    # --- rotating globe frames ---
+    frames = []
+    for lon in np.linspace(-180, 180, 60):
+        frames.append(go.Frame(
+            layout=dict(
+                geo=dict(projection_rotation=dict(lon=lon))
+            )
+        ))
+
+    fig.frames = frames
+
     fig.update_layout(
         geo=dict(
-            projection_type="orthographic",  # 🌍 globe
+            projection_type="orthographic",
             showland=True,
             landcolor="lightgray",
             showocean=True,
             oceancolor="lightblue",
         ),
-        margin=dict(l=0, r=0, t=0, b=0)
+        margin=dict(l=0, r=0, t=0, b=0),
+        updatemenus=[dict(
+            type="buttons",
+            showactive=False,
+            buttons=[dict(
+                label="Rotate",
+                method="animate",
+                args=[None, dict(
+                    frame=dict(duration=100, redraw=True),
+                    fromcurrent=True
+                )]
+            )]
+        )]
     )
 
     st.plotly_chart(fig, use_container_width=True)
