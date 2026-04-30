@@ -105,7 +105,7 @@ place1 = st.selectbox("From", [""] + places, index=0, placeholder="Start typing.
 place2 = st.selectbox("To", [""] + places, index=0, placeholder="Start typing...")
 
 # --- CALCULATION + MAP ---
-iimport plotly.graph_objects as go
+import plotly.graph_objects as go
 import numpy as np
 
 coords = get_coordinates(place1, place2)
