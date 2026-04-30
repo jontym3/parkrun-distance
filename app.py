@@ -104,11 +104,10 @@ st.title("Parkrun Distance Calculator")
 place1 = st.selectbox("From", [""] + places, index=0, placeholder="Start typing...")
 place2 = st.selectbox("To", [""] + places, index=0, placeholder="Start typing...")
 
-# --- CALCULATION + MAP ---
+# --- MAP ---
 import plotly.graph_objects as go
 import numpy as np
 
-# --- MAP ---
 if place1 and place2 and place1 != place2:
 
     coords = get_coordinates(place1, place2)
@@ -124,92 +123,113 @@ if place1 and place2 and place1 != place2:
         lat2 = np.radians(df.iloc[1]["lat"])
         lon2 = np.radians(df.iloc[1]["lon"])
 
-       # --- midpoint for rotation ---
-mid_lat = (np.degrees(lat1) + np.degrees(lat2)) / 2
-mid_lon = (np.degrees(lon1) + np.degrees(lon2)) / 2
+        # --- great circle ---
+        def great_circle(lat1, lon1, lat2, lon2, n=100):
+            d = 2 * np.arcsin(np.sqrt(
+                np.sin((lat2 - lat1)/2)**2 +
+                np.cos(lat1)*np.cos(lat2)*np.sin((lon2 - lon1)/2)**2
+            ))
 
-fig = go.Figure()
+            if d == 0:
+                return [np.degrees(lat1)], [np.degrees(lon1)]
 
-# --- static route ---
-fig.add_trace(go.Scattergeo(
-    lat=gc_lats,
-    lon=gc_lons,
-    mode='lines',
-    line=dict(width=2, color='yellow'),
-))
+            f = np.linspace(0, 1, n)
 
-# --- endpoints ---
-fig.add_trace(go.Scattergeo(
-    lat=[np.degrees(lat1), np.degrees(lat2)],
-    lon=[np.degrees(lon1), np.degrees(lon2)],
-    mode='markers',
-    marker=dict(size=8, color=['red', 'blue']),
-    text=df["name"],
-))
+            A = np.sin((1 - f) * d) / np.sin(d)
+            B = np.sin(f * d) / np.sin(d)
 
-# --- initial plane position ---
-fig.add_trace(go.Scattergeo(
-    lat=[gc_lats[0]],
-    lon=[gc_lons[0]],
-    mode='markers',
-    marker=dict(size=10, color='white', symbol='triangle-up'),
-    name="Plane"
-))
+            x = A*np.cos(lat1)*np.cos(lon1) + B*np.cos(lat2)*np.cos(lon2)
+            y = A*np.cos(lat1)*np.sin(lon1) + B*np.cos(lat2)*np.sin(lon2)
+            z = A*np.sin(lat1) + B*np.sin(lat2)
 
-# --- frames for animation ---
-frames = []
-steps = len(gc_lats)
+            lat = np.arctan2(z, np.sqrt(x**2 + y**2))
+            lon = np.arctan2(y, x)
 
-for i in range(steps):
-    # interpolate rotation smoothly
-    rot_lon = mid_lon * (i / steps)
+            return np.degrees(lat), np.degrees(lon)
 
-    frames.append(go.Frame(
-        data=[
-            go.Scattergeo(
-                lat=[gc_lats[i]],
-                lon=[gc_lons[i]],
-                mode='markers',
-                marker=dict(size=10, color='white', symbol='triangle-up')
-            )
-        ],
-        layout=dict(
+        gc_lats, gc_lons = great_circle(lat1, lon1, lat2, lon2)
+
+        # --- midpoint ---
+        mid_lat = (np.degrees(lat1) + np.degrees(lat2)) / 2
+        mid_lon = (np.degrees(lon1) + np.degrees(lon2)) / 2
+
+        fig = go.Figure()
+
+        # route
+        fig.add_trace(go.Scattergeo(
+            lat=gc_lats,
+            lon=gc_lons,
+            mode='lines',
+            line=dict(width=2, color='yellow'),
+        ))
+
+        # endpoints
+        fig.add_trace(go.Scattergeo(
+            lat=[np.degrees(lat1), np.degrees(lat2)],
+            lon=[np.degrees(lon1), np.degrees(lon2)],
+            mode='markers',
+            marker=dict(size=8, color=['red', 'blue']),
+            text=df["name"],
+        ))
+
+        # plane (start)
+        fig.add_trace(go.Scattergeo(
+            lat=[gc_lats[0]],
+            lon=[gc_lons[0]],
+            mode='markers',
+            marker=dict(size=10, color='white', symbol='triangle-up'),
+            name="Plane"
+        ))
+
+        # animation frames
+        frames = []
+        steps = len(gc_lats)
+
+        for i in range(steps):
+            frames.append(go.Frame(
+                data=[go.Scattergeo(
+                    lat=[gc_lats[i]],
+                    lon=[gc_lons[i]],
+                    mode='markers',
+                    marker=dict(size=10, color='white', symbol='triangle-up')
+                )],
+                layout=dict(
+                    geo=dict(
+                        projection_rotation=dict(
+                            lon=mid_lon * (i / steps),
+                            lat=mid_lat
+                        )
+                    )
+                )
+            ))
+
+        fig.frames = frames
+
+        fig.update_layout(
             geo=dict(
-                projection_rotation=dict(lon=rot_lon, lat=mid_lat)
-            )
-        )
-    ))
-
-fig.frames = frames
-
-# --- layout ---
-fig.update_layout(
-    geo=dict(
-        projection_type="orthographic",
-        projection_rotation=dict(lat=mid_lat, lon=0),  # start position
-        showland=True,
-        landcolor="lightgray",
-        showocean=True,
-        oceancolor="lightblue",
-    ),
-    margin=dict(l=0, r=0, t=0, b=0),
-    updatemenus=[dict(
-        type="buttons",
-        showactive=False,
-        buttons=[dict(
-            label="✈️ Fly",
-            method="animate",
-            args=[None, dict(
-                frame=dict(duration=50, redraw=True),
-                fromcurrent=True,
-                transition=dict(duration=0)
+                projection_type="orthographic",
+                projection_rotation=dict(lat=mid_lat, lon=0),
+                showland=True,
+                landcolor="lightgray",
+                showocean=True,
+                oceancolor="lightblue",
+            ),
+            margin=dict(l=0, r=0, t=0, b=0),
+            updatemenus=[dict(
+                type="buttons",
+                showactive=False,
+                buttons=[dict(
+                    label="✈️ Fly",
+                    method="animate",
+                    args=[None, dict(
+                        frame=dict(duration=50, redraw=True),
+                        fromcurrent=True
+                    )]
+                )]
             )]
-        )]
-    )]
-)
+        )
 
-st.plotly_chart(fig, use_container_width=True)
-
+        st.plotly_chart(fig, use_container_width=True)
 
 # --- TOP LISTS (always visible) ---
 st.markdown("---")
