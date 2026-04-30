@@ -124,8 +124,91 @@ if place1 and place2 and place1 != place2:
         lat2 = np.radians(df.iloc[1]["lat"])
         lon2 = np.radians(df.iloc[1]["lon"])
 
-        mid_lat = (np.degrees(lat1) + np.degrees(lat2)) / 2
-        mid_lon = (np.degrees(lon1) + np.degrees(lon2)) / 2
+# --- midpoint for rotation ---
+mid_lat = (np.degrees(lat1) + np.degrees(lat2)) / 2
+mid_lon = (np.degrees(lon1) + np.degrees(lon2)) / 2
+
+fig = go.Figure()
+
+# --- static route ---
+fig.add_trace(go.Scattergeo(
+    lat=gc_lats,
+    lon=gc_lons,
+    mode='lines',
+    line=dict(width=2, color='yellow'),
+))
+
+# --- endpoints ---
+fig.add_trace(go.Scattergeo(
+    lat=[np.degrees(lat1), np.degrees(lat2)],
+    lon=[np.degrees(lon1), np.degrees(lon2)],
+    mode='markers',
+    marker=dict(size=8, color=['red', 'blue']),
+    text=df["name"],
+))
+
+# --- initial plane position ---
+fig.add_trace(go.Scattergeo(
+    lat=[gc_lats[0]],
+    lon=[gc_lons[0]],
+    mode='markers',
+    marker=dict(size=10, color='white', symbol='triangle-up'),
+    name="Plane"
+))
+
+# --- frames for animation ---
+frames = []
+steps = len(gc_lats)
+
+for i in range(steps):
+    # interpolate rotation smoothly
+    rot_lon = mid_lon * (i / steps)
+
+    frames.append(go.Frame(
+        data=[
+            go.Scattergeo(
+                lat=[gc_lats[i]],
+                lon=[gc_lons[i]],
+                mode='markers',
+                marker=dict(size=10, color='white', symbol='triangle-up')
+            )
+        ],
+        layout=dict(
+            geo=dict(
+                projection_rotation=dict(lon=rot_lon, lat=mid_lat)
+            )
+        )
+    ))
+
+fig.frames = frames
+
+# --- layout ---
+fig.update_layout(
+    geo=dict(
+        projection_type="orthographic",
+        projection_rotation=dict(lat=mid_lat, lon=0),  # start position
+        showland=True,
+        landcolor="lightgray",
+        showocean=True,
+        oceancolor="lightblue",
+    ),
+    margin=dict(l=0, r=0, t=0, b=0),
+    updatemenus=[dict(
+        type="buttons",
+        showactive=False,
+        buttons=[dict(
+            label="✈️ Fly",
+            method="animate",
+            args=[None, dict(
+                frame=dict(duration=50, redraw=True),
+                fromcurrent=True,
+                transition=dict(duration=0)
+            )]
+        )]
+    )]
+)
+
+st.plotly_chart(fig, use_container_width=True)
 
         # --- great circle ---
         def great_circle(lat1, lon1, lat2, lon2, n=100):
