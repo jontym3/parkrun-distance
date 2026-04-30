@@ -105,82 +105,52 @@ place1 = st.selectbox("From", [""] + places, index=0, placeholder="Start typing.
 place2 = st.selectbox("To", [""] + places, index=0, placeholder="Start typing...")
 
 # --- CALCULATION + MAP ---
-if place1 and place2 and place1 != place2:
-    result = get_distance(place1, place2)
+iimport plotly.graph_objects as go
+import numpy as np
 
-    if result is not None:
-        st.success(f"{place1} → {place2}: {result:,.1f} km")
+coords = get_coordinates(place1, place2)
 
-    coords = get_coordinates(place1, place2)
+if coords:
+    df = pd.DataFrame(coords, columns=["name", "lat", "lon"])
 
-    if coords:
-        df = pd.DataFrame(coords, columns=["name", "lat", "lon"])
+    lat1, lon1 = df.iloc[0]["lat"], df.iloc[0]["lon"]
+    lat2, lon2 = df.iloc[1]["lat"], df.iloc[1]["lon"]
 
-        lat1, lon1 = df.iloc[0]["lat"], df.iloc[0]["lon"]
-        lat2, lon2 = df.iloc[1]["lat"], df.iloc[1]["lon"]
+    # --- create great circle curve ---
+    lats = np.linspace(lat1, lat2, 100)
+    lons = np.linspace(lon1, lon2, 100)
 
-        html = """
-        <html>
-        <head>
-            <script src="https://cesium.com/downloads/cesiumjs/releases/1.111/Build/Cesium/Cesium.js"></script>
-            <link href="https://cesium.com/downloads/cesiumjs/releases/1.111/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
-            <style>
-                html, body, #cesiumContainer {{
-                    width: 100%; height: 500px; margin: 0; padding: 0;
-                }}
-            </style>
-        </head>
-        <body>
-        <div id="cesiumContainer"></div>
-        <script>
-            Cesium.Ion.defaultAccessToken = '{token}';
+    fig = go.Figure()
 
-            const viewer = new Cesium.Viewer('cesiumContainer', {{
-                terrainProvider: Cesium.createWorldTerrain()
-            }});
+    # Points
+    fig.add_trace(go.Scattergeo(
+        lat=[lat1, lat2],
+        lon=[lon1, lon2],
+        mode='markers',
+        marker=dict(size=8, color=['red', 'blue']),
+        text=df["name"],
+    ))
 
-            viewer.imageryLayers.addImageryProvider(
-                new Cesium.IonImageryProvider({{ assetId: 2 }})
-            );
+    # Curved path
+    fig.add_trace(go.Scattergeo(
+        lat=lats,
+        lon=lons,
+        mode='lines',
+        line=dict(width=2, color='yellow'),
+    ))
 
-            const p1 = Cesium.Cartesian3.fromDegrees({lon1}, {lat1});
-            const p2 = Cesium.Cartesian3.fromDegrees({lon2}, {lat2});
+    fig.update_layout(
+        geo=dict(
+            projection_type="orthographic",  # 🌍 globe
+            showland=True,
+            landcolor="lightgray",
+            showocean=True,
+            oceancolor="lightblue",
+        ),
+        margin=dict(l=0, r=0, t=0, b=0)
+    )
 
-            viewer.entities.add({{
-                position: p1,
-                point: {{ pixelSize: 10, color: Cesium.Color.RED }}
-            }});
-
-            viewer.entities.add({{
-                position: p2,
-                point: {{ pixelSize: 10, color: Cesium.Color.BLUE }}
-            }});
-
-            viewer.entities.add({{
-                polyline: {{
-                    positions: [p1, p2],
-                    width: 4,
-                    material: new Cesium.PolylineGlowMaterialProperty({{
-                        glowPower: 0.2,
-                        color: Cesium.Color.YELLOW
-                    }}),
-                    arcType: Cesium.ArcType.GEODESIC
-                }}
-            }});
-
-            viewer.zoomTo(viewer.entities);
-        </script>
-        </body>
-        </html>
-        """.format(
-            lat1=lat1,
-            lon1=lon1,
-            lat2=lat2,
-            lon2=lon2,
-            token=st.secrets["CESIUM_TOKEN"]
-        )
-
-        components.html(html, height=500)
+    st.plotly_chart(fig, use_container_width=True)
 
 # --- TOP LISTS (always visible) ---
 st.markdown("---")
