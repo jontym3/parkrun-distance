@@ -3,6 +3,7 @@ import psycopg2
 import pandas as pd
 import pydeck as pdk
 
+
 # --- DB CONNECTION ---
 @st.cache_resource
 def get_conn():
@@ -131,65 +132,60 @@ if place1 and place2:
         st.success(f"{place1} → {place2}: {result:,.1f} km")
 
     # --- MAP ---
-    coords = get_coordinates(place1, place2)
+    import streamlit.components.v1 as components
 
-    if coords:
-        df = pd.DataFrame(coords, columns=["name", "lat", "lon"])
+if coords:
+    df = pd.DataFrame(coords, columns=["name", "lat", "lon"])
 
-        # Colors for points
-        if len(df) == 2:
-            df["color"] = [[255, 0, 0], [0, 128, 255]]
-        else:
-            df["color"] = [[255, 0, 0]] * len(df)
+    lat1, lon1 = df.iloc[0]["lat"], df.iloc[0]["lon"]
+    lat2, lon2 = df.iloc[1]["lat"], df.iloc[1]["lon"]
 
-        # Scatter layer
-        scatter = pdk.Layer(
-            "ScatterplotLayer",
-            data=df,
-            get_position="[lon, lat]",
-            get_fill_color="color",
-            get_radius=20000,
-        )
+    html = f"""
+    <html>
+    <head>
+        <script src="https://cesium.com/downloads/cesiumjs/releases/1.111/Build/Cesium/Cesium.js"></script>
+        <link href="https://cesium.com/downloads/cesiumjs/releases/1.111/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
+        <style>
+            html, body, #cesiumContainer {{
+                width: 100%; height: 500px; margin: 0; padding: 0;
+            }}
+        </style>
+    </head>
+    <body>
+        <div id="cesiumContainer"></div>
+        <script>
+            const viewer = new Cesium.Viewer('cesiumContainer', {{
+                terrainProvider: Cesium.createWorldTerrain()
+            }});
 
-        # Line between points
-        if len(df) == 2:
-            line = pdk.Layer(
-                "LineLayer",
-                data=[
-                    {
-                        "from_lon": df.iloc[0]["lon"],
-                        "from_lat": df.iloc[0]["lat"],
-                        "to_lon": df.iloc[1]["lon"],
-                        "to_lat": df.iloc[1]["lat"],
-                    }
-                ],
-                get_source_position="[from_lon, from_lat]",
-                get_target_position="[to_lon, to_lat]",
-                get_color=[0, 0, 255],
-                get_width=3,
-            )
-            layers = [scatter, line]
-        else:
-            layers = [scatter]
+            const p1 = Cesium.Cartesian3.fromDegrees({lon1}, {lat1});
+            const p2 = Cesium.Cartesian3.fromDegrees({lon2}, {lat2});
 
-        # View
-        mid_lat = df["lat"].mean()
-        mid_lon = df["lon"].mean()
+            viewer.entities.add({{
+                position: p1,
+                point: {{ pixelSize: 10, color: Cesium.Color.RED }}
+            }});
 
-        view = pdk.ViewState(
-            latitude=mid_lat,
-            longitude=mid_lon,
-            zoom=3,
-        )
+            viewer.entities.add({{
+                position: p2,
+                point: {{ pixelSize: 10, color: Cesium.Color.BLUE }}
+            }});
 
-        st.pydeck_chart(
-            pdk.Deck(
-                map_style="https://basemaps.cartocdn.com/gl/positron-gl-style/style.json",
-                initial_view_state=view,
-                layers=layers,
-                tooltip={"html": "<b>{name}</b>"},
-            )
-        )
+            viewer.entities.add({{
+                polyline: {{
+                    positions: [p1, p2],
+                    width: 3,
+                    material: Cesium.Color.BLUE
+                }}
+            }});
+
+            viewer.zoomTo(viewer.entities);
+        </script>
+    </body>
+    </html>
+    """
+
+    components.html(html, height=500)
 
 # --- TOP LISTS ---
 st.markdown("---")
