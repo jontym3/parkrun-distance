@@ -4,9 +4,6 @@ import pandas as pd
 import pydeck as pdk
 import streamlit.components.v1 as components
 
-id="cesium_token"
-Cesium.Ion.defaultAccessToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiI3ZjdmNDlhZC1jMjQxLTRiNmMtOTRjMy1iOGU2MmE3NDhjY2UiLCJpZCI6NDI1NjAwLCJpYXQiOjE3Nzc1MjI1MTh9.zRNbOUNTDY5cAl2308K0d1CWyagQ-va8ZUcFY2DYkss';
-
 # --- DB CONNECTION ---
 @st.cache_resource
 def get_conn():
@@ -172,40 +169,38 @@ if coords:
     <body>
         <div id="cesiumContainer"></div>
         <script>
-            Cesium.Ion.defaultAccessToken = 'your-token-here';
+            Cesium.Ion.defaultAccessToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiI3ZjdmNDlhZC1jMjQxLTRiNmMtOTRjMy1iOGU2MmE3NDhjY2UiLCJpZCI6NDI1NjAwLCJpYXQiOjE3Nzc1MjI1MTh9.zRNbOUNTDY5cAl2308K0d1CWyagQ-va8ZUcFY2DYkss';
 
 const viewer = new Cesium.Viewer('cesiumContainer', {
     terrainProvider: Cesium.createWorldTerrain()
 });
 
-            const p1 = Cesium.Cartesian3.fromDegrees({lon1}, {lat1});
-            const p2 = Cesium.Cartesian3.fromDegrees({lon2}, {lat2});
+const p1 = Cesium.Cartesian3.fromDegrees({lon1}, {lat1});
+const p2 = Cesium.Cartesian3.fromDegrees({lon2}, {lat2});
 
-            viewer.entities.add({{
-                position: p1,
-                point: {{ pixelSize: 10, color: Cesium.Color.RED }}
-            }});
+// Points
+viewer.entities.add({
+    position: p1,
+    point: { pixelSize: 10, color: Cesium.Color.RED }
+});
 
-            viewer.entities.add({{
-                position: p2,
-                point: {{ pixelSize: 10, color: Cesium.Color.BLUE }}
-            }});
+viewer.entities.add({
+    position: p2,
+    point: { pixelSize: 10, color: Cesium.Color.BLUE }
+});
 
-            viewer.entities.add({{
-                polyline: {{
-                    positions: [p1, p2],
-                    width: 3,
-                    material: Cesium.Color.BLUE
-                }}
-            }});
+// ✈️ Curved great-circle path
+viewer.entities.add({
+    polyline: {
+        positions: [p1, p2],
+        width: 4,
+        material: Cesium.Color.YELLOW,
+        arcType: Cesium.ArcType.GEODESIC
+    }
+});
 
-            viewer.zoomTo(viewer.entities);
-        </script>
-    </body>
-    </html>
-    """
-
-    components.html(html, height=500)
+// Zoom to fit
+viewer.zoomTo(viewer.entities);
 
 # --- TOP LISTS ---
 st.markdown("---")
