@@ -97,29 +97,18 @@ def get_closest():
 @st.cache_data(ttl=3600)
 def get_furthest():
     with conn.cursor() as cur:
-        cur.execute(
-            """
-            WITH approx AS (
-                SELECT a.name AS from_name, b.name AS to_name,
-                       (a.lat - b.lat)^2 + (a.lon - b.lon)^2 AS approx_dist
-                FROM places a
-                JOIN places b ON a.id < b.id
-                ORDER BY approx_dist DESC
-                LIMIT 1000
-            )
-            SELECT from_name, to_name,
+        cur.execute("""
+            SELECT a.name, b.name,
                    6371 * acos(
-                       sin(radians(a.lat)) * sin(radians(b.lat)) +
-                       cos(radians(a.lat)) * cos(radians(b.lat)) *
-                       cos(radians(b.lon - a.lon))
+                       sin(a.lat_rad) * sin(b.lat_rad) +
+                       cos(a.lat_rad) * cos(b.lat_rad) *
+                       cos(b.lon_rad - a.lon_rad)
                    ) AS distance
-            FROM approx
-            JOIN places a ON a.name = approx.from_name
-            JOIN places b ON b.name = approx.to_name
+            FROM places a
+            JOIN places b ON a.id < b.id
             ORDER BY distance DESC
             LIMIT 100;
-            """
-        )
+        """)
         return cur.fetchall()
 
 
