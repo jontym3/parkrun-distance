@@ -138,6 +138,17 @@ if place1 and place2:
             get_fill_color="color",
             get_radius=20000
         )
+	
+	text = pdk.Layer(
+    		"TextLayer",
+    		data=df,
+    		get_position="[lon, lat]",
+    		get_text="name",
+    		get_size=14,
+		get_color=[0, 0, 0],
+    		get_alignment_baseline="'bottom'",
+    		get_pixel_offset=[0, -20],
+	)
 
         line = pdk.Layer(
             "LineLayer",
@@ -161,7 +172,7 @@ if place1 and place2:
         st.pydeck_chart(pdk.Deck(
             map_style="https://basemaps.cartocdn.com/gl/positron-gl-style/style.json",
             initial_view_state=view,
-            layers=[scatter, line],
+            layers=[scatter, text, line],
             tooltip={"html": "<b>{name}</b>"}
         ))
 
