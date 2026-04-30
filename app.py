@@ -104,24 +104,6 @@ st.title("Parkrun Distance Calculator")
 place1 = st.selectbox("From", [""] + places, index=0, placeholder="Start typing...")
 place2 = st.selectbox("To", [""] + places, index=0, placeholder="Start typing...")
 
-# --- TOP LISTS (always visible) ---
-st.markdown("---")
-st.header("Distance Rankings")
-
-tab1, tab2 = st.tabs(["Closest 100", "Furthest 100"])
-
-with tab1:
-    df = pd.DataFrame(get_closest(), columns=["From", "To", "Distance"])
-    df["Distance"] = df["Distance"].map(lambda x: f"{x:,.1f}")
-    df.insert(0, "Rank", range(1, len(df) + 1))
-    st.dataframe(df, use_container_width=True, hide_index=True)
-
-with tab2:
-    df = pd.DataFrame(get_furthest(), columns=["From", "To", "Distance"])
-    df["Distance"] = df["Distance"].map(lambda x: f"{x:,.1f}")
-    df.insert(0, "Rank", range(1, len(df) + 1))
-    st.dataframe(df, use_container_width=True, hide_index=True)
-
 # --- CALCULATION + MAP ---
 if place1 and place2 and place1 != place2:
     result = get_distance(place1, place2)
@@ -199,3 +181,22 @@ if place1 and place2 and place1 != place2:
         )
 
         components.html(html, height=500)
+
+# --- TOP LISTS (always visible) ---
+st.markdown("---")
+st.header("Distance Rankings")
+
+tab1, tab2 = st.tabs(["Closest 100", "Furthest 100"])
+
+with tab1:
+    df = pd.DataFrame(get_closest(), columns=["From", "To", "Distance"])
+    df["Distance"] = df["Distance"].map(lambda x: f"{x:,.1f}")
+    df.insert(0, "Rank", range(1, len(df) + 1))
+    st.dataframe(df, use_container_width=True, hide_index=True)
+
+with tab2:
+    df = pd.DataFrame(get_furthest(), columns=["From", "To", "Distance"])
+    df["Distance"] = df["Distance"].map(lambda x: f"{x:,.1f}")
+    df.insert(0, "Rank", range(1, len(df) + 1))
+    st.dataframe(df, use_container_width=True, hide_index=True)
+
