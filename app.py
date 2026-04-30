@@ -211,17 +211,19 @@ if place1 and place2 and place1 != place2:
 st.markdown("---")
 st.header("Distance Rankings")
 
-tab1, tab2 = st.tabs(["Closest 100", "Furthest 100"])
+tab1, tab2 = st.tabs(["Furthest 100", "Closest 100"])
 
 with tab1:
+    df = pd.DataFrame(get_furthest(), columns=["From", "To", "Distance"])
+    df["Distance"] = df["Distance"].map(lambda x: f"{x:,.1f}")
+    df.insert(0, "Rank", range(1, len(df) + 1))
+    st.dataframe(df, use_container_width=True, hide_index=True)
+
+
+with tab2:
     df = pd.DataFrame(get_closest(), columns=["From", "To", "Distance"])
     df["Distance"] = df["Distance"].map(lambda x: f"{x:,.1f}")
     df.insert(0, "Rank", range(1, len(df) + 1))
     st.dataframe(df, use_container_width=True, hide_index=True)
 
-with tab2:
-    df = pd.DataFrame(get_furthest(), columns=["From", "To", "Distance"])
-    df["Distance"] = df["Distance"].map(lambda x: f"{x:,.1f}")
-    df.insert(0, "Rank", range(1, len(df) + 1))
-    st.dataframe(df, use_container_width=True, hide_index=True)
 
