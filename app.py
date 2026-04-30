@@ -1,7 +1,9 @@
 import streamlit as st
 import psycopg2
+import pandas as pd
+import pydeck as pdk
 
-# --- DB CONNECTION (cached so it isn't recreated every run)
+# --- DB CONNECTION ---
 @st.cache_resource
 def get_conn():
     return psycopg2.connect(
@@ -15,7 +17,7 @@ def get_conn():
 
 conn = get_conn()
 
-# --- LOAD PLACE LIST (cached = faster UI)
+# --- LOAD PLACE LIST ---
 @st.cache_data
 def get_places():
     with conn.cursor() as cur:
@@ -23,6 +25,17 @@ def get_places():
         return [row[0] for row in cur.fetchall()]
 
 places = get_places()
+
+# --- GET COORDINATES ---
+@st.cache_data
+def get_coordinates(place1, place2):
+    with conn.cursor() as cur:
+        cur.execute("""
+            SELECT name, lat, lon
+            FROM places
+            WHERE name IN (%s, %s);
+        """, (place1, place2))
+        return cur.fetchall()
 
 # --- UI ---
 st.title("Parkrun Distance Calculator")
@@ -50,10 +63,89 @@ if place1 and place2:
                 ON a.name = %s AND b.name = %s;
             """, (place1, place2))
 
-            result = cur.fetchone()[0]
+            row = cur.fetchone()
+            result = row[0] if row else None
 
-    # --- SAFE OUTPUT ---
+    # --- OUTPUT ---
     if result is not None:
         st.success(f"{place1} → {place2}: {result:,.1f} km")
     else:
         st.error("Could not calculate distance")
+
+    st.caption(f"From: {place1} | To: {place2}")
+    st.markdown("---")
+
+    # --- MAP ---
+    coords = get_coordinates(place1, place2)
+
+    if coords:
+        df = pd.DataFrame(coords, columns=["name", "lat", "lon"])
+
+        # --- Different colours for each point
+        if len(df) == 2:
+            df["color"] = [[255, 0, 0], [0, 128, 255]]
+        else:
+            df["color"] = [[255, 0, 0]] * len(df)
+
+        # --- Scatter points
+        scatter_layer = pdk.Layer(
+            "ScatterplotLayer",
+            data=df,
+            get_position="[lon, lat]",
+            get_radius=20000,
+            get_fill_color="color",
+            pickable=True,
+        )
+
+        # --- Line between points
+        if len(df) == 2:
+            line_data = pd.DataFrame([{
+                "from_lon": df.iloc[0]["lon"],
+                "from_lat": df.iloc[0]["lat"],
+                "to_lon": df.iloc[1]["lon"],
+                "to_lat": df.iloc[1]["lat"]
+            }])
+
+            line_layer = pdk.Layer(
+                "LineLayer",
+                data=line_data,
+                get_source_position="[from_lon, from_lat]",
+                get_target_position="[to_lon, to_lat]",
+                get_color=[0, 0, 255],
+                get_width=3,
+            )
+        else:
+            line_layer = None
+
+        # --- Center + dynamic zoom
+        mid_lat = df["lat"].mean()
+        mid_lon = df["lon"].mean()
+
+        if len(df) == 2:
+            lat_diff = abs(df.iloc[0]["lat"] - df.iloc[1]["lat"])
+            zoom = 3 if lat_diff > 20 else 5
+        else:
+            zoom = 5
+
+        view_state = pdk.ViewState(
+            latitude=mid_lat,
+            longitude=mid_lon,
+            zoom=zoom,
+        )
+
+        # --- Tooltip
+        tooltip = {
+            "html": "<b>{name}</b>",
+            "style": {"backgroundColor": "steelblue", "color": "white"}
+        }
+
+        layers = [scatter_layer]
+        if line_layer:
+            layers.append(line_layer)
+
+        st.pydeck_chart(pdk.Deck(
+            map_style="mapbox://styles/mapbox/light-v9",
+            initial_view_state=view_state,
+            layers=layers,
+            tooltip=tooltip,
+        ))
