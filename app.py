@@ -162,18 +162,6 @@ if place1 and place2:
             get_radius=20000,
         )
 
-        # Text labels
-        text = pdk.Layer(
-            "TextLayer",
-            data=df,
-            get_position="[lon, lat]",
-            get_text="name",
-            get_size=14,
-            get_color=[0, 0, 0],
-            get_alignment_baseline="'bottom'",
-            get_pixel_offset=[0, -20],
-        )
-
         # Line between points
         if len(df) == 2:
             line = pdk.Layer(
@@ -191,9 +179,9 @@ if place1 and place2:
                 get_color=[0, 0, 255],
                 get_width=3,
             )
-            layers = [scatter, text, line]
+            layers = [scatter, line]
         else:
-            layers = [scatter, text]
+            layers = [scatter]
 
         # View
         mid_lat = df["lat"].mean()
@@ -223,9 +211,11 @@ tab1, tab2 = st.tabs(["Closest 100", "Furthest 100"])
 with tab1:
     df = pd.DataFrame(get_closest(), columns=["From", "To", "Distance"])
     df["Distance"] = df["Distance"].map(lambda x: f"{x:,.1f}")
+    df.index = df.index + 1
     st.dataframe(df, use_container_width=True)
 
 with tab2:
     df = pd.DataFrame(get_furthest(), columns=["From", "To", "Distance"])
     df["Distance"] = df["Distance"].map(lambda x: f"{x:,.1f}")
+    df.index = df.index + 1
     st.dataframe(df, use_container_width=True)
