@@ -144,7 +144,7 @@ if place1 and place2:
             layers.append(line_layer)
 
         st.pydeck_chart(pdk.Deck(
-            map_style="mapbox://styles/mapbox/light-v9",
+            map_style="https://basemaps.cartocdn.com/gl/positron-gl-style/style.json",
             initial_view_state=view_state,
             layers=layers,
             tooltip=tooltip,
