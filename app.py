@@ -110,18 +110,26 @@ import numpy as np
 
 coords = get_coordinates(place1, place2)
 
-if coords:
+# 🔒 STRICT CHECK
+if not coords or len(coords) != 2:
+    st.warning("Could not find both locations in database")
+else:
     df = pd.DataFrame(coords, columns=["name", "lat", "lon"])
 
-    lat1, lon1 = np.radians(df.iloc[0]["lat"]), np.radians(df.iloc[0]["lon"])
-    lat2, lon2 = np.radians(df.iloc[1]["lat"]), np.radians(df.iloc[1]["lon"])
+    lat1 = np.radians(df.iloc[0]["lat"])
+    lon1 = np.radians(df.iloc[0]["lon"])
+    lat2 = np.radians(df.iloc[1]["lat"])
+    lon2 = np.radians(df.iloc[1]["lon"])
 
-    # --- great circle interpolation ---
+    # --- great circle ---
     def great_circle(lat1, lon1, lat2, lon2, n=100):
         d = 2 * np.arcsin(np.sqrt(
             np.sin((lat2 - lat1)/2)**2 +
             np.cos(lat1)*np.cos(lat2)*np.sin((lon2 - lon1)/2)**2
         ))
+
+        if d == 0:
+            return [np.degrees(lat1)], [np.degrees(lon1)]
 
         f = np.linspace(0, 1, n)
 
@@ -139,10 +147,8 @@ if coords:
 
     gc_lats, gc_lons = great_circle(lat1, lon1, lat2, lon2)
 
-    # --- build figure ---
     fig = go.Figure()
 
-    # Points
     fig.add_trace(go.Scattergeo(
         lat=[np.degrees(lat1), np.degrees(lat2)],
         lon=[np.degrees(lon1), np.degrees(lon2)],
@@ -151,24 +157,12 @@ if coords:
         text=df["name"],
     ))
 
-    # Great-circle path
     fig.add_trace(go.Scattergeo(
         lat=gc_lats,
         lon=gc_lons,
         mode='lines',
         line=dict(width=2, color='yellow'),
     ))
-
-    # --- rotating globe frames ---
-    frames = []
-    for lon in np.linspace(-180, 180, 60):
-        frames.append(go.Frame(
-            layout=dict(
-                geo=dict(projection_rotation=dict(lon=lon))
-            )
-        ))
-
-    fig.frames = frames
 
     fig.update_layout(
         geo=dict(
@@ -178,19 +172,7 @@ if coords:
             showocean=True,
             oceancolor="lightblue",
         ),
-        margin=dict(l=0, r=0, t=0, b=0),
-        updatemenus=[dict(
-            type="buttons",
-            showactive=False,
-            buttons=[dict(
-                label="Rotate",
-                method="animate",
-                args=[None, dict(
-                    frame=dict(duration=100, redraw=True),
-                    fromcurrent=True
-                )]
-            )]
-        )]
+        margin=dict(l=0, r=0, t=0, b=0)
     )
 
     st.plotly_chart(fig, use_container_width=True)
