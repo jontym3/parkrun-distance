@@ -31,9 +31,9 @@ places = get_places()
 def get_coordinates(p1, p2):
     with conn.cursor() as cur:
         cur.execute("""
-            SELECT name, lat, lon
-            FROM places
-            WHERE name IN (%s, %s)
+            SELECT name, lat, lon FROM places WHERE name = %s
+            UNION ALL
+            SELECT name, lat, lon FROM places WHERE name = %s
         """, (p1, p2))
         return cur.fetchall()
 
