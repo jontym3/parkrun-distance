@@ -58,13 +58,53 @@ def get_distance(p1, p2):
 @st.cache_data(ttl=3600)
 def get_closest():
     with conn.cursor() as cur:
-        cur.execute("""<PASTE closest_opt SQL HERE>""")
+        cur.execute("""
+            WITH approx AS (
+                SELECT a.name AS from_name, b.name AS to_name,
+                       (a.lat - b.lat)^2 + (a.lon - b.lon)^2 AS approx_dist
+                FROM places a
+                JOIN places b ON a.id < b.id
+                ORDER BY approx_dist ASC
+                LIMIT 1000
+            )
+            SELECT from_name, to_name,
+                   6371 * acos(
+                       sin(radians(a.lat)) * sin(radians(b.lat)) +
+                       cos(radians(a.lat)) * cos(radians(b.lat)) *
+                       cos(radians(b.lon - a.lon))
+                   ) AS distance
+            FROM approx
+            JOIN places a ON a.name = approx.from_name
+            JOIN places b ON b.name = approx.to_name
+            ORDER BY distance ASC
+            LIMIT 100;
+        """)
         return cur.fetchall()
 
 @st.cache_data(ttl=3600)
 def get_furthest():
     with conn.cursor() as cur:
-        cur.execute("""<PASTE furthest_opt SQL HERE>""")
+        cur.execute("""
+            WITH approx AS (
+                SELECT a.name AS from_name, b.name AS to_name,
+                       (a.lat - b.lat)^2 + (a.lon - b.lon)^2 AS approx_dist
+                FROM places a
+                JOIN places b ON a.id < b.id
+                ORDER BY approx_dist DESC
+                LIMIT 1000
+            )
+            SELECT from_name, to_name,
+                   6371 * acos(
+                       sin(radians(a.lat)) * sin(radians(b.lat)) +
+                       cos(radians(a.lat)) * cos(radians(b.lat)) *
+                       cos(radians(b.lon - a.lon))
+                   ) AS distance
+            FROM approx
+            JOIN places a ON a.name = approx.from_name
+            JOIN places b ON b.name = approx.to_name
+            ORDER BY distance DESC
+            LIMIT 100;
+        """)
         return cur.fetchall()
 
 # --- UI ---
